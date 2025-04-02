@@ -1,30 +1,21 @@
-from datetime import datetime
-from mfrc522 import SimpleMFRC522
-from rfid_reader import obter_tag, definir_percentual
-from balanca import calibracao, calculo_peso, read_count, BALANCAS
+from setup import inicializar_sistema
+from balanca import setup_balanca, calibracao, calculo_peso, read_count
 from motor import configurar_pwm, ativar_rele
+#from identificacao import obter_tag, definir_percentual, obter_hora_atual
 import RPi.GPIO as GPIO
-import pigpio
 import time
+import pigpio
 
-# Inicialização
+# Inicializa o pigpio, se necessário
 pi = pigpio.pi()
 if not pi.connected:
+    print("Erro: pigpio não está conectado.")
     exit()
 
-# Constantes e pinos
-pino_pwm = 18
-pino_rele = 11
+GPIO.setmode(GPIO.BOARD)  # ou GPIO.setmode(GPIO.BCM), conforme seu projeto
 GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(pino_rele, GPIO.OUT)
 
-configurar_pwm(0)  # Desliga o PWM inicialmente
-
-def obter_hora_atual():
-    return datetime.now().strftime("\nDia: %d-%m-%Y \nHora: %H:%M:%S")
-
-def processo_peso(racao):
+def processo_peso(tara1, racao):
     while True:
         peso = calculo_peso(tara1, read_count(BALANCAS[1]['DT'], BALANCAS[1]['SCK']), BALANCAS[1]['fator'])
         print(f'\nPeso atual: {peso:.2f}')
@@ -41,7 +32,8 @@ def processo_peso(racao):
         elif peso < (racao * 0.1):
             configurar_pwm(255)
 
-def identificacao():
+
+def identificacao(tara2):
     try:
         print("Aguardando... CTRL+C para parar o programa")
         nome_animal = obter_tag()
@@ -62,13 +54,16 @@ def identificacao():
         print(f"\nPeso da ração definido em: {racao:.2f} g")
         time.sleep(3)
 
-        processo_peso(racao)
+        processo_peso(tara1, racao)
 
     except Exception as e:
         print(f"Erro: {e}")
 
+
 def main():
     try:
+        pi, BALANCAS = inicializar_sistema()
+
         print("\nCalibrando Balança 1...")
         global tara1
         tara1 = calibracao(BALANCAS[1]['DT'], BALANCAS[1]['SCK'])
@@ -78,13 +73,14 @@ def main():
         tara2 = calibracao(BALANCAS[2]['DT'], BALANCAS[2]['SCK'])
 
         while True:
-            identificacao()
+            identificacao(tara2)
 
     except KeyboardInterrupt:
         print("\nEncerrando...")
         GPIO.cleanup()
         configurar_pwm(0)
         pi.stop()
+
 
 if __name__ == "__main__":
     main()
