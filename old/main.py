@@ -1,6 +1,5 @@
 from datetime import datetime
 from mfrc522 import SimpleMFRC522
-from rdif_reader import read_tag
 import RPi.GPIO as GPIO
 import pigpio
 import time
@@ -33,12 +32,6 @@ GPIO.setup(DT1, GPIO.IN)
 GPIO.setup(SCK1, GPIO.OUT)
 GPIO.setup(DT2, GPIO.IN)
 GPIO.setup(SCK2, GPIO.OUT)
-
-# Apenas para calcular o percentual de ração, demais informações estarão na tag
-tags = {
-    1045638617204: {"percentual": 0.01},  # 1% do peso para Bovino, cartão branco
-    445860857856: {"percentual": 0.02}    # 2% do peso para Ovino, tag azul
-}
 
 #Função que configura o driver da balança
 def read_count(DT, SCK):
@@ -84,47 +77,76 @@ def obter_hora_atual():
     return datetime.now().strftime("\nDia: %d-%m-%Y \nHora: %H:%M:%S")
 
 #Identificação de TAGS
-def identificacao():
-    try:
-        id, text = read_tag()
-        if id in animais:
-            animal = animais[id]
-            print(f"\nID da Tag: {id}")
-            hora = obter_hora_atual()
-            print(f"\nData e hora atual: {hora}")
+def identificacao(tags):
+    if tags == 1045638617204: #Cartão branco
+        print('\nBovino 1')
+        hora = obter_hora_atual()
+        print("\nData e hora atual:", hora,"\n")   
+        for _ in range(10):
+            peso_animal = calculo_peso2()
+            calculo_racao = calculo_peso2() * 0.01 # 1% do peso do animal, será a quantidade de ração despejada
+            print("Peso Bovino 1: ", peso_animal)
+            time.sleep(1)
 
-            for _ in range(10):
-                peso_animal = calculo_peso2()
-                calculo_racao = peso_animal * animal['percentual']  # Cálculo dinâmico da ração
-                print(f"Peso {animal['nome']}: {peso_animal}")
-                time.sleep(1)
+        racao = calculo_racao
+        print("\nPeso da ração definido em:" , racao, "g")
+        time.sleep(3)
+        
+        #Criar uma função para rodar após a identificação     
+        while True:
+            peso = calculo_peso1()
+            #peso = (media_tara - read_count()) * 0.02925
+            print('\nPeso atual:{: .2f}'.format(peso))
+            time.sleep(0.5)
 
-            racao = calculo_racao
-            print(f"\nPeso da ração definido em: {racao:.2f} g")
-            time.sleep(3)
+            if peso >= (racao):
+                print('Peso atingido')
+                pi.set_PWM_dutycycle(pino_pwm, 0)
+                time.sleep(2)
+                rele()
+                time.sleep(2)
+                break #Sai do Loop e volta para leitura de TAG
+            elif peso > (racao*0.5):
+                print('Ta quase')
+                pi.set_PWM_dutycycle(pino_pwm, 100)
 
-            # Controle de peso e ração
-            while True:
-                peso = calculo_peso1()
-                print(f'\nPeso atual: {peso:.2f}')
-                time.sleep(0.5)
+            if peso < (racao*0.1):
+                pi.set_PWM_dutycycle(pino_pwm, 255)
+        
+    if tags == 445860857856: # Tag azul
+        print('\nOvino 1')
+        hora = obter_hora_atual()
+        print("\nData e hora atual: ", hora)
+        for _ in range(10):
+            peso_animal = calculo_peso2()
+            calculo_racao = calculo_peso2() * 0.02 # 2% do peso do animal, será a quantidade de ração despejada
+            print("Peso Ovino: ", peso_animal)
+            time.sleep(1)
 
-                if peso >= racao:
-                    print('Peso atingido')
-                    pi.set_PWM_dutycycle(pino_pwm, 0)
-                    time.sleep(2)
-                    rele()
-                    time.sleep(2)
-                    break  # Sai do loop e volta para leitura da TAG
-                elif peso > (racao * 0.5):
-                    print('Ta quase')
-                    pi.set_PWM_dutycycle(pino_pwm, 100)
-                elif peso < (racao * 0.1):
-                    pi.set_PWM_dutycycle(pino_pwm, 255)
-        else:
-            print("Tag não registrada!")
-    except Exception as e:
-        print(f"Erro: {e}")
+        racao = calculo_racao
+        print("\nPeso da racao definido em:", racao, "g")
+        time.sleep(3)
+
+        #Criar uma função para rodar após a identificação     
+        while True:
+            peso = calculo_peso1()
+            #peso = (media_tara - read_count()) * 0.02925
+            print('\nPeso atual:{: .2f}'.format(peso))
+            time.sleep(0.5)
+
+            if peso >= (racao):
+                print('Peso atingido')
+                pi.set_PWM_dutycycle(pino_pwm, 0)
+                time.sleep(2)
+                rele()
+                time.sleep(2)
+                break #Sai do Loop e volta para leitura de TAG
+            elif peso > (racao*0.5):
+                print('Ta quase')
+                pi.set_PWM_dutycycle(pino_pwm, 100)
+
+            if peso < (racao*0.1):
+                pi.set_PWM_dutycycle(pino_pwm, 255)
             
 def rele():
     pino_rele = 11
