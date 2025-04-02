@@ -2,7 +2,7 @@ from datetime import datetime
 from mfrc522 import SimpleMFRC522
 from rfid_reader import obter_tag, definir_percentual
 from balanca import calibracao, calculo_peso, read_count, BALANCAS
-from motor import configurar_pwm, ativar_rele
+from motor import configurar_pwm, ativar_rele, destravar_motor
 import RPi.GPIO as GPIO
 import pigpio
 import time
@@ -25,10 +25,23 @@ def obter_hora_atual():
     return datetime.now().strftime("\nDia: %d-%m-%Y \nHora: %H:%M:%S")
 
 def processo_peso(racao):
+    ultimo_peso = 0
+    tempo_ultimo_peso = time.time()
+
     while True:
         peso = calculo_peso(tara1, read_count(BALANCAS[1]['DT'], BALANCAS[1]['SCK']), BALANCAS[1]['fator'])
         print(f'\nPeso atual: {peso:.2f}')
         time.sleep(0.5)
+
+        # Verifica se o peso ficou travado por mais de 30 segundos
+        if abs(peso - ultimo_peso) < 1:  # Variação pequena considerada como travamento
+            if time.time() - tempo_ultimo_peso > 30:
+                print('Travamento detectado! Tentando destravar o motor...')
+                destravar_motor()
+                tempo_ultimo_peso = time.time()
+        else:
+            ultimo_peso = peso
+            tempo_ultimo_peso = time.time()
 
         if peso >= racao:
             print('Peso atingido')
@@ -40,6 +53,7 @@ def processo_peso(racao):
             configurar_pwm(100)
         elif peso < (racao * 0.1):
             configurar_pwm(255)
+
 
 def identificacao():
     try:
