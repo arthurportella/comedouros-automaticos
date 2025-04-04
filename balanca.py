@@ -5,6 +5,8 @@ import time
 GPIO.setmode(GPIO.BOARD)  # Ou GPIO.BCM, conforme sua configuração
 GPIO.setwarnings(False)
 
+# Configuração dos pinos GPIO e funções para leitura e calibração das balanças.
+
 # Constantes e pinos das balanças
 BALANCAS = {
     1: {'DT': 29, 'SCK': 31, 'fator': 0.02908},

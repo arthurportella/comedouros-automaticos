@@ -1,10 +1,11 @@
 from setup import inicializar_sistema
 from balanca import setup_balanca, calibracao, calculo_peso, read_count
 from motor import configurar_pwm, ativar_rele
-#from identificacao import obter_tag, definir_percentual, obter_hora_atual
 import RPi.GPIO as GPIO
 import time
 import pigpio
+
+# Inicializa o sistema, realiza a identificação do animal e controla o processo de pesagem e alimentação.
 
 # Inicializa o pigpio, se necessário
 pi = pigpio.pi()
@@ -12,7 +13,7 @@ if not pi.connected:
     print("Erro: pigpio não está conectado.")
     exit()
 
-GPIO.setmode(GPIO.BOARD)  # ou GPIO.setmode(GPIO.BCM), conforme seu projeto
+GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
 
 def processo_peso(tara1, racao):

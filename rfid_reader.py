@@ -1,5 +1,7 @@
 from mfrc522 import SimpleMFRC522
 
+# Realiza a leitura da tag RFID para identificar o animal e define o percentual de ração conforme o tipo.
+
 reader = SimpleMFRC522()
 
 def obter_tag():

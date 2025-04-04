@@ -1,7 +1,8 @@
-# motor.py
 import RPi.GPIO as GPIO
 import pigpio
 import time
+
+# Configura o PWM, ativa o motor e realiza o destravamento da hélice, se necessário.
 
 pino_pwm = 18
 pino_rele = 11
