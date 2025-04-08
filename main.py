@@ -3,6 +3,7 @@ from mfrc522 import SimpleMFRC522
 from rfid_reader import obter_tag, definir_percentual
 from balanca import calibracao, calculo_peso, read_count, BALANCAS
 from motor import configurar_pwm, ativar_rele, destravar_motor
+from detector_movimento import detectar_movimento
 import RPi.GPIO as GPIO
 import pigpio
 import time
@@ -11,6 +12,10 @@ import time
 pi = pigpio.pi()
 if not pi.connected:
     exit()
+
+# Faz a calibração dasi duas balanças
+#tara1 = calibracao(BALANCAS[1]['DT'], BALANCAS[1]['SCK'])
+#tara2 = calibracao(BALANCAS[2]['DT'], BALANCAS[2]['SCK'])
 
 # Constantes e pinos
 pino_pwm = 18
@@ -93,12 +98,15 @@ def main():
 
         while True:
             identificacao()
+            print("Aguardando movimento para iniciar identificação...")
+            detectar_movimento()
 
     except KeyboardInterrupt:
         print("\nEncerrando...")
         GPIO.cleanup()
         configurar_pwm(0)
         pi.stop()
+
 
 if __name__ == "__main__":
     main()

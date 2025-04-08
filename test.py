@@ -1,21 +1,50 @@
+import cv2
+import numpy as np
+import subprocess
 import time
-from balanca import calibracao, calculo_peso, read_count, BALANCAS
+import os
 
-def testar_balanca_1():
-    print("Calibrando Balança 1...")
-    try:
-        # Calibração da balança 1
-        tara1 = calibracao(BALANCAS[1]['DT'], BALANCAS[1]['SCK'])
-        print(f"Tara inicial: {tara1}")
+def detectar_movimento(threshold=10000):
+    print("Iniciando detecção de movimento...")
 
-        while True:
-            # Leitura do peso
-            peso = calculo_peso(tara1, read_count(BALANCAS[1]['DT'], BALANCAS[1]['SCK']), BALANCAS[1]['fator'])
-            print(f"Peso atual: {peso:.2f} g")
-            time.sleep(1)  # Intervalo entre as leituras
+    anterior = "frame1.jpg"
+    atual = "frame2.jpg"
 
-    except KeyboardInterrupt:
-        print("\nTeste interrompido pelo usuário.")
+    capturar_imagem(anterior)
+    time.sleep(1)
 
-if __name__ == "__main__":
-    testar_balanca_1()
+    while True:
+        capturar_imagem(atual)
+
+        movimento = calcular_diferenca(anterior, atual)
+        print(f"Pixels em movimento: {movimento:.0f}")
+
+        if movimento > threshold:
+            print("⚠️ Movimento detectado! (Possível cabeça levantando)")
+            break  # Sai do loop para continuar a execução principal
+
+        os.rename(atual, anterior)
+        time.sleep(2)
+
+def capturar_imagem(nome_arquivo):
+    subprocess.run([
+        "libcamera-still",
+        "-o", nome_arquivo,
+        "--width", "640",
+        "--height", "480",
+        "--timeout", "1",
+        "--nopreview"
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def calcular_diferenca(img1_path, img2_path):
+    img1 = cv2.imread(img1_path)
+    img2 = cv2.imread(img2_path)
+
+    if img1 is None or img2 is None:
+        return 0
+
+    diff = cv2.absdiff(img1, img2)
+    gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 25, 255, cv2.THRESH_BINARY)
+    movimento = np.sum(thresh) / 255
+    return movimento

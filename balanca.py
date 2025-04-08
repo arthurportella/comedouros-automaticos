@@ -9,7 +9,7 @@ GPIO.setwarnings(False)
 
 # Constantes e pinos das balanças
 BALANCAS = {
-    1: {'DT': 29, 'SCK': 31, 'fator': 0.02908},
+    1: {'DT': 29, 'SCK': 31, 'fator': -0.02908},
     2: {'DT': 33, 'SCK': 35, 'fator': 0.03415}
 }
 

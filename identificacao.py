@@ -58,7 +58,7 @@ def identificacao(tara2):
         processo_peso(tara1, racao)
 
     except Exception as e:
-        print(f"Erro: {e}")
+        print(f"Erro: {e}")#
 
 
 def main():
