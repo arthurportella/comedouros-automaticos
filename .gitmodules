@@ -1,0 +1,3 @@
+[submodule "Fonkan_FM-503/FM-503-UHF-RFID-Reader"]
+	path = Fonkan_FM-503/FM-503-UHF-RFID-Reader
+	url = https://github.com/tmanabc123/FM-503-UHF-RFID-Reader.git
